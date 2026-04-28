@@ -4,6 +4,50 @@ import { useNavigate } from 'react-router-dom';
 const CadastroSeller = () => {
   const navigate = useNavigate();
 
+  const [formData, setFormData] = React.useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    cpfCnpj: '',
+    empresa: '',
+    categoria: '',
+    endereco: '',
+    observacoes: '',
+    senha: ''  // ← NOVO CAMPO ADICIONADO
+  });
+
+  async function handleSubmit(e) {
+    e.preventDefault(); 
+    
+    if (!formData.nome || !formData.email || !formData.telefone || !formData.cpfCnpj || !formData.empresa || !formData.endereco || !formData.senha) {
+      alert('Por favor, preencha os campos obrigatórios.');
+      return;
+    }
+
+    // Mapear campos do frontend para o formato do backend
+    const payload = {
+      name: formData.nome,
+      email: formData.email,
+      cnpj: formData.cpfCnpj,
+      celular: formData.telefone,
+      password: formData.senha
+    };
+
+    let req = await fetch('http://localhost:5000/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!req.ok) {
+      alert('Erro ao cadastrar seller.');
+      return;
+    }
+
+    alert('Seller cadastrado com sucesso!');
+    navigate('/');
+  }
+
   return (
     <div style={styles.page}>
       <header style={styles.header}>
@@ -28,51 +72,57 @@ const CadastroSeller = () => {
             <div style={styles.row}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>👤 Nome completo</label>
-                <input style={styles.input} type="text" placeholder="João da Silva" />
+                <input style={styles.input} type="text" placeholder="João da Silva" name="nome" value={formData.nome} onChange={(e) => setFormData({...formData, nome: e.target.value})} />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>✉️ E-mail</label>
-                <input style={styles.input} type="email" placeholder="joao@empresa.com" />
+                <input style={styles.input} type="email" placeholder="joao@empresa.com" name="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
               </div>
             </div>
 
             <div style={styles.row}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>📞 Telefone</label>
-                <input style={styles.input} type="text" placeholder="(11) 98765-4321" />
+                <input style={styles.input} type="text" placeholder="(11) 98765-4321" name="telefone" value={formData.telefone} onChange={(e) => setFormData({...formData, telefone: e.target.value})} />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}># CPF / CNPJ</label>
-                <input style={styles.input} type="text" placeholder="000.000.000-00" />
+                <input style={styles.input} type="text" placeholder="000.000.000-00" name="cpfCnpj" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: e.target.value})} />
               </div>
             </div>
 
             <div style={styles.row}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>🏢 Empresa</label>
-                <input style={styles.input} type="text" placeholder="Nome da empresa" />
+                <input style={styles.input} type="text" placeholder="Nome da empresa" name="empresa" value={formData.empresa} onChange={(e) => setFormData({...formData, empresa: e.target.value})} />
               </div>
               <div style={styles.inputGroup}>
-                <label style={styles.label}>🛍️ Categoria</label>
-                <select style={styles.input}>
-                  <option>Selecione</option>
-                </select>
+                <label style={styles.label}>🔒 Senha</label>
+                <input style={styles.input} type="password" placeholder="Digite uma senha" name="senha" value={formData.senha} onChange={(e) => setFormData({...formData, senha: e.target.value})} />
               </div>
             </div>
 
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>📍 Endereço</label>
-              <input style={styles.input} type="text" placeholder="Rua, número, bairro, cidade - UF" />
+            <div style={styles.row}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>🛍️ Categoria</label>
+                <select style={styles.input} name="categoria" value={formData.categoria} onChange={(e) => setFormData({...formData, categoria: e.target.value})}>
+                  <option value="">Selecione</option>
+                </select>
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>📍 Endereço</label>
+                <input style={styles.input} type="text" placeholder="Rua, número, bairro, cidade - UF" name="endereco" value={formData.endereco} onChange={(e) => setFormData({...formData, endereco: e.target.value})} />
+              </div>
             </div>
 
             <div style={styles.inputGroup}>
               <label style={styles.label}>Observações</label>
-              <textarea style={{...styles.input, height: '100px'}} placeholder="Informações adicionais sobre o seller (opcional)" />
+              <textarea style={{...styles.input, height: '100px'}} placeholder="Informações adicionais sobre o seller (opcional)" name="observacoes" value={formData.observacoes} onChange={(e) => setFormData({...formData, observacoes: e.target.value})} />
             </div>
 
             <div style={styles.buttonRow}>
-              <button type="button" onClick={() => navigate('/')} style={styles.btnClean}>Limpar</button>
-              <button type="submit" style={styles.btnSubmit}>Cadastrar Seller</button>
+              <button type="button" onClick={() => setFormData({nome: '', email: '', telefone: '', cpfCnpj: '', empresa: '', categoria: '', endereco: '', observacoes: '', senha: ''})} style={styles.btnClean}>Limpar</button>
+              <button type="button" onClick={handleSubmit} style={styles.btnSubmit}>Cadastrar Seller</button>
             </div>
           </form>
         </div>
