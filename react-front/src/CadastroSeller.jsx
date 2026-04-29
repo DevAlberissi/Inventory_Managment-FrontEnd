@@ -44,8 +44,7 @@ const CadastroSeller = () => {
       return;
     }
 
-    alert('Seller cadastrado com sucesso!');
-    navigate('/');
+    navigate('/verificar', { state: { phone: formData.telefone, email: formData.email } });
   }
 
   return (
