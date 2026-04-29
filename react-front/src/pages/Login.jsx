@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Package, Mail, Lock } from 'lucide-react'
-import { Button, Card, Field, AuthLayout, IconBox, Alert, IconInput } from '../components'
+import { Button, Card, Field, AuthLayout, IconBox, Alert, IconInput, Navbar } from '../components'
 import { authService } from '../services/auth.service'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -29,7 +29,9 @@ const Login = () => {
   }
 
   return (
-    <AuthLayout>
+    <>
+      <Navbar />
+      <AuthLayout>
       <Card padding={36} style={{ textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
           <IconBox icon={<Package />} tone="accent" size={56} />
@@ -76,6 +78,7 @@ const Login = () => {
         </button>
       </Card>
     </AuthLayout>
+    </>
   )
 }
 

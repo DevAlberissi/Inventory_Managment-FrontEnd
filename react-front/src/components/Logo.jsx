@@ -1,7 +1,7 @@
 import { Package } from 'lucide-react'
 
-export const Logo = ({ size = 28 }) => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+export const Logo = ({ size = 28, onClick }) => (
+  <span onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, cursor: onClick ? 'pointer' : 'default' }}>
     <span style={{
       width: size + 8, height: size + 8, borderRadius: 10,
       background: '#6366F1',

@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import CadastroSeller from './pages/CadastroSeller'
 import Login from './pages/Login'
 import VerificacaoWhatsApp from './pages/VerificacaoWhatsApp'
+import EditarPerfil from './pages/EditarPerfil'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/cadastrar" element={<CadastroSeller />} />
           <Route path="/verificar" element={<VerificacaoWhatsApp />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/editar-perfil" element={<EditarPerfil />} />
         </Routes>
       </Router>
     </AuthProvider>

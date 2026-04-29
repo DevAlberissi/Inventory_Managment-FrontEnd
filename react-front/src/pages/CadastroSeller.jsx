@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
-import { Button, Card, Field, Input, AppHeader, IconBox } from '../components'
+import { Button, Card, Field, Input, Navbar, IconBox } from '../components'
 import { usersService } from '../services/users.service'
 
 const EMPTY_FORM = { nome: '', email: '', telefone: '', cpfCnpj: '', senha: '' }
@@ -36,7 +36,7 @@ const CadastroSeller = () => {
 
   return (
     <div style={{ background: '#F9FAFB', minHeight: '100vh' }}>
-      <AppHeader actions={<Button variant="ghost" onClick={() => navigate('/')}>← Voltar</Button>} />
+      <Navbar />
 
       <main style={{ maxWidth: 900, margin: '40px auto', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>

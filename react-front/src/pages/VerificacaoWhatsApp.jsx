@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MessageCircle } from 'lucide-react'
-import { Button, Card, AuthLayout, IconBox, Alert } from '../components'
+import { Button, Card, AuthLayout, IconBox, Alert, Navbar } from '../components'
 import { authService } from '../services/auth.service'
 
 const TOTAL_DIGITS = 4
@@ -92,7 +92,9 @@ const VerificacaoWhatsApp = () => {
   const isComplete = digits.every(d => d !== '')
 
   return (
-    <AuthLayout maxWidth={420}>
+    <>
+      <Navbar />
+      <AuthLayout maxWidth={420}>
       <Card padding={36} style={{ textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
           <IconBox icon={<MessageCircle />} tone="accent" size={56} />
@@ -174,6 +176,7 @@ const VerificacaoWhatsApp = () => {
         </button>
       </Card>
     </AuthLayout>
+    </>
   )
 }
 

@@ -3,7 +3,7 @@ import {
   Users, Package, TrendingUp, MessageCircle, ShieldCheck, BarChart3,
   Check, ArrowRight, UserPlus, Play, Quote,
 } from 'lucide-react'
-import { Logo, Button, Card, Badge, AppHeader, SectionHeader, IconBox } from '../components'
+import { Logo, Button, Card, Badge, Navbar, SectionHeader, IconBox } from '../components'
 
 /* ---------- sub-components ---------- */
 
@@ -116,11 +116,6 @@ const FakeTerminal = () => (
   </div>
 )
 
-const navLinkStyle = {
-  fontSize: 14, fontWeight: 500, color: '#475569', textDecoration: 'none',
-  padding: '8px 12px', borderRadius: 8,
-}
-
 /* ---------- main component ---------- */
 
 const Home = () => {
@@ -129,18 +124,7 @@ const Home = () => {
   return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
 
-      <AppHeader
-        style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', zIndex: 10 }}
-        actions={
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <a href="#features" style={navLinkStyle}>Recursos</a>
-            <a href="#workflow" style={navLinkStyle}>Como funciona</a>
-            <span style={{ width: 8 }} />
-            <Button variant="ghost" onClick={() => navigate('/login')}>Entrar</Button>
-            <Button variant="primary" onClick={() => navigate('/cadastrar')}>Começar grátis</Button>
-          </nav>
-        }
-      />
+      <Navbar />
 
       {/* Hero */}
       <section style={{ maxWidth: 1200, margin: '0 auto', padding: '72px 32px 80px' }}>
