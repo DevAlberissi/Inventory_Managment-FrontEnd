@@ -24,6 +24,11 @@ const Home = () => {
           <span style={{ marginRight: '8px' }}>👤+</span>
           Cadastrar novo Seller
         </button>
+
+        <button onClick={() => navigate('/login')} style={styles.loginButton}>
+          <span style={{ marginRight: '8px' }}>🔐</span>
+          Login
+        </button>
       </div>
     </div>
   );
@@ -36,7 +41,8 @@ const styles = {
   logoIcon: { width: '35px', filter: 'brightness(0) invert(1)' },
   title: { fontSize: '32px', fontWeight: 'bold', color: '#0a1d37', margin: '0 0 8px 0' },
   subtitle: { color: '#6c757d', marginBottom: '32px' },
-  button: { backgroundColor: '#007bff', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }
+  button: { backgroundColor: '#007bff', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' },
+  loginButton: { backgroundColor: 'transparent', color: '#007bff', border: '2px solid #007bff', padding: '10px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', marginLeft: '12px' }
 };
 
 export default Home;
