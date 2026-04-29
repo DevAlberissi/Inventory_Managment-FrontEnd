@@ -5,12 +5,39 @@ const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aqui você pode adicionar a lógica de autenticação
-    console.log('Login attempt:', { email, password });
-    alert('Funcionalidade de login em desenvolvimento!');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensagem || 'Erro ao fazer login');
+      }
+
+      // Armazena o token no localStorage
+      localStorage.setItem('token', data.token);
+      
+      alert('Login realizado com sucesso!');
+      navigate('/home');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,6 +57,8 @@ const Login = () => {
         </p>
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          {error && <div style={styles.error}>{error}</div>}
+
           <div style={styles.inputGroup}>
             <label style={styles.label}>Email</label>
             <input 
@@ -54,8 +83,8 @@ const Login = () => {
             />
           </div>
 
-          <button type="submit" style={styles.button}>
-            Entrar
+          <button type="submit" style={styles.button} disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 
@@ -79,7 +108,8 @@ const styles = {
   label: { display: 'block', fontSize: '14px', fontWeight: '600', color: '#0a1d37', marginBottom: '6px' },
   input: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ced4da', fontSize: '16px', boxSizing: 'border-box' },
   button: { backgroundColor: '#007bff', color: 'white', border: 'none', padding: '14px 24px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '8px' },
-  backButton: { backgroundColor: 'transparent', color: '#6c757d', border: 'none', padding: '12px', fontSize: '14px', cursor: 'pointer', marginTop: '16px' }
+  backButton: { backgroundColor: 'transparent', color: '#6c757d', border: 'none', padding: '12px', fontSize: '14px', cursor: 'pointer', marginTop: '16px' },
+  error: { backgroundColor: '#f8d7da', color: '#721c24', padding: '12px', borderRadius: '8px', fontSize: '14px', border: '1px solid #f5c6cb' }
 };
 
 export default Login;
