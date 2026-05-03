@@ -1,4 +1,5 @@
 # Claude Code context files
+.github/
 .claude/
 .agents/
 skills-lock.json

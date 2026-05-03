@@ -1,9 +1,14 @@
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Users, Package, TrendingUp, MessageCircle, ShieldCheck, BarChart3,
   Check, ArrowRight, UserPlus, Play, Quote,
+  AlertTriangle, ShoppingBag, DollarSign, CheckCircle2, Plus,
 } from 'lucide-react'
-import { Logo, Button, Card, Badge, Navbar, SectionHeader, IconBox } from '../components'
+import { Logo, Button, Card, Badge, Navbar, SectionHeader, IconBox, Alert } from '../components'
+import { colors, radius, shadow, spacing, tones } from '../styles/tokens'
+import { useAuth } from '../contexts/AuthContext'
+import { dashboardService } from '../services/dashboard.service'
 
 /* ---------- sub-components ---------- */
 
@@ -116,10 +121,246 @@ const FakeTerminal = () => (
   </div>
 )
 
+/* ---------- dashboard sub-components ---------- */
+
+const KpiCard = ({ title, value, icon, tone }) => (
+  <Card padding={spacing[24]}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[12] }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: colors.textSecondary }}>{title}</span>
+      <IconBox icon={icon} tone={tone} size={32} radius={radius.sm} />
+    </div>
+    <div style={{ fontSize: 28, fontWeight: 700, color: colors.text, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+      {value}
+    </div>
+  </Card>
+)
+
+const SalesMetric = ({ label, value, positive }) => (
+  <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: spacing[12] }}>
+    <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</div>
+    <div style={{ fontSize: 16, fontWeight: 700, color: positive ? colors.success : colors.text, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+  </div>
+)
+
+const CardHeader = ({ title, subtitle, action }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[16] }}>
+    <div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 2 }}>{title}</div>
+      {subtitle && <div style={{ fontSize: 13, color: colors.textMuted }}>{subtitle}</div>}
+    </div>
+    {action}
+  </div>
+)
+
+/* ---------- seller dashboard ---------- */
+
+const SellerDashboard = () => {
+  const { token } = useAuth()
+  const navigate = useNavigate()
+
+  const [products, setProducts] = useState([])
+  const [salesSummary, setSalesSummary] = useState(null)
+  const [recentSales, setRecentSales] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const sellerName = useMemo(() => {
+    try {
+      return JSON.parse(atob(token.split('.')[1])).name || 'Seller'
+    } catch {
+      return 'Seller'
+    }
+  }, [token])
+
+  useEffect(() => {
+    Promise.all([
+      dashboardService.getProducts(),
+      dashboardService.getSalesSummary(),
+      dashboardService.getRecentSales(),
+    ])
+      .then(([prodRes, salesRes, salesListRes]) => {
+        setProducts(prodRes.produtos || [])
+        setSalesSummary(salesRes)
+        setRecentSales(salesListRes.vendas || [])
+      })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const totalProdutos  = products.length
+  const produtosAtivos = products.filter(p => p.status).length
+  const estoqueBaixo   = products.filter(p => p.quantity < 5).length
+  const valorEstoque   = products.reduce((sum, p) => sum + (p.price * p.quantity), 0)
+
+  return (
+    <div style={{ minHeight: '100vh', background: colors.bg }}>
+      <Navbar />
+
+      <main style={{ maxWidth: 1200, margin: '0 auto', padding: `${spacing[32]}px ${spacing[24]}px` }}>
+        <div style={{ marginBottom: spacing[24] }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: colors.text, letterSpacing: '-0.01em' }}>
+            Dashboard
+          </div>
+          <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>
+            Bem-vindo de volta, {sellerName}! Acompanhe suas vendas e estoque.
+          </div>
+        </div>
+
+        {loading && (
+          <Alert tone="info" title="Carregando dados do dashboard..." />
+        )}
+
+        {error && (
+          <Alert tone="error" title={`Erro ao carregar dados: ${error}`} />
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* KPI row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing[16], marginBottom: spacing[24] }}>
+              <KpiCard title="Total de Produtos" value={totalProdutos} icon={<Package size={16} />} tone="accent" />
+              <KpiCard title="Produtos Ativos"   value={produtosAtivos} icon={<CheckCircle2 size={16} />} tone="success" />
+              <KpiCard title="Estoque Baixo"     value={estoqueBaixo} icon={<AlertTriangle size={16} />} tone="warning" />
+              <KpiCard
+                title="Valor do Estoque"
+                value={valorEstoque.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                icon={<DollarSign size={16} />}
+                tone="neutral"
+              />
+            </div>
+
+            {/* Sales section */}
+            {salesSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[16], marginBottom: spacing[24] }}>
+                {/* Summary metrics */}
+                <Card padding={spacing[24]}>
+                  <CardHeader title="Resumo de Vendas" subtitle="Dados do mês atual" />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[12], marginBottom: spacing[16] }}>
+                    <SalesMetric label="Total vendido"   value={salesSummary.totalVendas}        positive />
+                    <SalesMetric label="Transações"      value={salesSummary.totalTransacoes} />
+                    <SalesMetric label="Ticket médio"    value={salesSummary.ticketMedio} />
+                    <SalesMetric label="Crescimento"     value={salesSummary.crescimentoMensal}  positive />
+                  </div>
+                  <Badge tone="info" dot>Dados simulados — integração em breve</Badge>
+                </Card>
+
+                {/* Recent sales */}
+                <Card padding={spacing[24]}>
+                  <CardHeader title="Últimas Vendas" subtitle="Movimentações recentes" />
+                  {recentSales.map((sale, i) => (
+                    <div
+                      key={sale.id}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: `${spacing[8]}px 0`,
+                        borderBottom: i < recentSales.length - 1 ? `1px solid ${colors.border}` : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: spacing[8], alignItems: 'center' }}>
+                        <IconBox icon={<ShoppingBag size={14} />} tone="accent" size={28} radius={radius.sm} />
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{sale.produto}</div>
+                          <div style={{ fontSize: 12, color: colors.textMuted }}>{sale.data} · {sale.quantidade} un.</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: colors.success, fontVariantNumeric: 'tabular-nums' }}>
+                        {sale.valor}
+                      </span>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: spacing[12] }}>
+                    <Badge tone="info" dot>Dados simulados — integração em breve</Badge>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Products list */}
+            <Card padding={spacing[24]}>
+              <CardHeader
+                title="Meus Produtos"
+                subtitle={`${totalProdutos} produto${totalProdutos !== 1 ? 's' : ''} cadastrado${totalProdutos !== 1 ? 's' : ''}`}
+                action={
+                  <Button variant="primary" onClick={() => navigate('/produtos/novo')}>
+                    <Plus size={14} /> Novo Produto
+                  </Button>
+                }
+              />
+
+              {products.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: `${spacing[32]}px 0`, color: colors.textMuted }}>
+                  <Package size={40} color={colors.textMuted} />
+                  <div style={{ fontSize: 15, fontWeight: 500, marginTop: spacing[12], color: colors.text }}>Nenhum produto cadastrado ainda.</div>
+                  <div style={{ fontSize: 13, marginTop: spacing[4], marginBottom: spacing[16] }}>Adicione seu primeiro produto para começar a vender.</div>
+                  <Button variant="primary" onClick={() => navigate('/produtos/novo')}>
+                    <Plus size={14} /> Cadastrar primeiro produto
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  {/* Table header */}
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: '1fr 120px 100px 90px',
+                    gap: spacing[16], padding: `${spacing[8]}px 0`,
+                    borderBottom: `1px solid ${colors.border}`, marginBottom: spacing[8],
+                  }}>
+                    {['Produto', 'Preço', 'Estoque', 'Status'].map(h => (
+                      <span key={h} style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Table rows */}
+                  {products.map((product, i) => (
+                    <div
+                      key={product.id}
+                      style={{
+                        display: 'grid', gridTemplateColumns: '1fr 120px 100px 90px',
+                        gap: spacing[16], padding: `${spacing[12]}px 0`,
+                        borderBottom: i < products.length - 1 ? `1px solid ${colors.border}` : 'none',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: spacing[12], alignItems: 'center' }}>
+                        <IconBox icon={<Package size={14} />} tone="neutral" size={32} radius={radius.sm} />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{product.name}</div>
+                          <div style={{ fontSize: 12, color: colors.textMuted }}>ID #{product.id}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>
+                        {Number(product.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                      <span style={{
+                        fontSize: 14, fontVariantNumeric: 'tabular-nums',
+                        color: product.quantity < 5 ? colors.warning : colors.text,
+                        fontWeight: product.quantity < 5 ? 700 : 500,
+                      }}>
+                        {product.quantity} un.
+                      </span>
+                      <Badge tone={product.status ? 'success' : 'neutral'} dot>
+                        {product.status ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </>
+        )}
+      </main>
+    </div>
+  )
+}
+
 /* ---------- main component ---------- */
 
 const Home = () => {
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+
+  if (isAuthenticated) return <SellerDashboard />
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
