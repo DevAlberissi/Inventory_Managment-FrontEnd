@@ -163,7 +163,6 @@ const SellerDashboard = () => {
   const [recentSales, setRecentSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
   const sellerName = useMemo(() => {
     try {
       return JSON.parse(atob(token.split('.')[1])).name || 'Seller'
@@ -275,77 +274,32 @@ const SellerDashboard = () => {
               </div>
             )}
 
-            {/* Products list */}
+            {/* Products quick access */}
             <Card padding={spacing[24]}>
-              <CardHeader
-                title="Meus Produtos"
-                subtitle={`${totalProdutos} produto${totalProdutos !== 1 ? 's' : ''} cadastrado${totalProdutos !== 1 ? 's' : ''}`}
-                action={
-                  <Button variant="primary" onClick={() => navigate('/produtos/novo')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: spacing[16], alignItems: 'center' }}>
+                  <IconBox icon={<Package size={18} />} tone="accent" size={44} radius={radius.md} />
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>Meus Produtos</div>
+                    <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
+                      {totalProdutos} cadastrado{totalProdutos !== 1 ? 's' : ''}
+                      {estoqueBaixo > 0 && (
+                        <span style={{ color: colors.warning, fontWeight: 600 }}>
+                          {' '}· {estoqueBaixo} com estoque baixo
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: spacing[8] }}>
+                  <Button variant="secondary" onClick={() => navigate('/produtos/novo')}>
                     <Plus size={14} /> Novo Produto
                   </Button>
-                }
-              />
-
-              {products.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: `${spacing[32]}px 0`, color: colors.textMuted }}>
-                  <Package size={40} color={colors.textMuted} />
-                  <div style={{ fontSize: 15, fontWeight: 500, marginTop: spacing[12], color: colors.text }}>Nenhum produto cadastrado ainda.</div>
-                  <div style={{ fontSize: 13, marginTop: spacing[4], marginBottom: spacing[16] }}>Adicione seu primeiro produto para começar a vender.</div>
-                  <Button variant="primary" onClick={() => navigate('/produtos/novo')}>
-                    <Plus size={14} /> Cadastrar primeiro produto
+                  <Button variant="primary" onClick={() => navigate('/produtos')}>
+                    <Package size={14} /> Ver Produtos
                   </Button>
                 </div>
-              ) : (
-                <div>
-                  {/* Table header */}
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: '1fr 120px 100px 90px',
-                    gap: spacing[16], padding: `${spacing[8]}px 0`,
-                    borderBottom: `1px solid ${colors.border}`, marginBottom: spacing[8],
-                  }}>
-                    {['Produto', 'Preço', 'Estoque', 'Status'].map(h => (
-                      <span key={h} style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                        {h}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Table rows */}
-                  {products.map((product, i) => (
-                    <div
-                      key={product.id}
-                      style={{
-                        display: 'grid', gridTemplateColumns: '1fr 120px 100px 90px',
-                        gap: spacing[16], padding: `${spacing[12]}px 0`,
-                        borderBottom: i < products.length - 1 ? `1px solid ${colors.border}` : 'none',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: spacing[12], alignItems: 'center' }}>
-                        <IconBox icon={<Package size={14} />} tone="neutral" size={32} radius={radius.sm} />
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{product.name}</div>
-                          <div style={{ fontSize: 12, color: colors.textMuted }}>ID #{product.id}</div>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>
-                        {Number(product.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                      <span style={{
-                        fontSize: 14, fontVariantNumeric: 'tabular-nums',
-                        color: product.quantity < 5 ? colors.warning : colors.text,
-                        fontWeight: product.quantity < 5 ? 700 : 500,
-                      }}>
-                        {product.quantity} un.
-                      </span>
-                      <Badge tone={product.status ? 'success' : 'neutral'} dot>
-                        {product.status ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
+              </div>
             </Card>
           </>
         )}

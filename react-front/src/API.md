@@ -2,7 +2,7 @@
 
 Base URL: `http://localhost:5000`
 
-Rotas protegidas exigem o header:
+Rotas marcadas com **JWT** exigem o header:
 ```
 Authorization: Bearer <token>
 ```
@@ -11,19 +11,16 @@ Authorization: Bearer <token>
 
 ## Autenticação
 
-### POST `/auth/login`
+### POST /auth/login
+Autentica um usuário e retorna um JWT.
 
-Autentica um seller e retorna um JWT.
+**Body (JSON)**
+| Campo | Tipo | Obrigatório |
+|-------|------|-------------|
+| email | string | sim |
+| password | string | sim |
 
-**Auth:** Não
-
-**Body (JSON):**
-| Campo    | Tipo   | Obrigatório |
-|----------|--------|-------------|
-| email    | string | Sim         |
-| password | string | Sim         |
-
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
   "mensagem": "Login realizado",
@@ -31,255 +28,335 @@ Autentica um seller e retorna um JWT.
 }
 ```
 
-**Erros:**
-| Status | Mensagem           | Causa                                   |
-|--------|--------------------|-----------------------------------------|
-| 400    | Dados inválidos    | email ou password ausente               |
-| 401    | `<motivo>`         | Credenciais incorretas ou conta inativa |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Dados inválidos (campos faltando) |
+| 401 | Credenciais incorretas |
 
 ---
 
-## Sellers (Usuários)
+## Usuários
 
-### POST `/users`
+### POST /users
+Registra um novo seller. Envia código de ativação via WhatsApp.
 
-Cadastra um novo seller. Envia o código de ativação via WhatsApp (Twilio).
+**Body (JSON)**
+| Campo | Tipo | Obrigatório |
+|-------|------|-------------|
+| name | string | sim |
+| email | string | sim |
+| cnpj | string | sim |
+| password | string | sim |
+| celular | string | não |
 
-**Auth:** Não
-
-**Body (JSON):**
-| Campo    | Tipo   | Obrigatório |
-|----------|--------|-------------|
-| name     | string | Sim         |
-| email    | string | Sim         |
-| password | string | Sim         |
-| cnpj     | string | Sim         |
-| celular  | string | Não         |
-
-**Resposta 201:**
+**Resposta 201**
 ```json
 {
   "mensagem": "Seller cadastrado. Código enviado no WhatsApp",
-  "usuarios": { ...seller }
+  "usuarios": { ...user }
 }
 ```
 
-**Erros:**
-| Status | Mensagem              | Causa                              |
-|--------|-----------------------|------------------------------------|
-| 400    | Missing required fields | name, email, password ou cnpj ausente |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Campos obrigatórios ausentes |
 
 ---
 
-### PATCH `/users/activate`
+### PATCH /users/activate
+Ativa a conta do usuário usando o código recebido via WhatsApp.
 
-Ativa a conta do seller usando o código de 4 dígitos recebido via WhatsApp.
+**Body (JSON)**
+| Campo | Tipo | Obrigatório |
+|-------|------|-------------|
+| email | string | sim |
+| code | string | sim |
 
-**Auth:** Não
-
-**Body (JSON):**
-| Campo | Tipo   | Obrigatório |
-|-------|--------|-------------|
-| email | string | Sim         |
-| code  | string | Sim         |
-
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
   "mensagem": "Conta ativada com sucesso"
 }
 ```
 
-**Erros:**
-| Status | Mensagem        | Causa                         |
-|--------|-----------------|-------------------------------|
-| 400    | Dados inválidos | email ou code ausente         |
-| 400    | Código inválido | Código incorreto ou expirado  |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Dados inválidos ou código incorreto |
 
 ---
 
-### PATCH `/users/me`
+### PATCH /users/me — **JWT**
+Atualiza os dados do usuário autenticado.
 
-Atualiza os dados do seller autenticado.
-
-**Auth:** JWT
-
-**Body (JSON):** Qualquer subconjunto dos campos abaixo:
-| Campo    | Tipo   |
-|----------|--------|
-| name     | string |
-| email    | string |
+**Body (JSON)** — enviar apenas os campos a alterar
+| Campo | Tipo |
+|-------|------|
+| name | string |
+| email | string |
+| cnpj | string |
+| celular | string |
 | password | string |
-| cnpj     | string |
-| celular  | string |
 
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
   "mensagem": "Atualização realizada com sucesso!",
-  "usuarios": { ...seller }
+  "usuarios": { ...user }
 }
 ```
 
-**Erros:**
-| Status | Mensagem              | Causa                   |
-|--------|-----------------------|-------------------------|
-| 404    | Usuário não encontrado | seller_id não existe    |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 404 | Usuário não encontrado |
 
 ---
 
 ## Produtos
 
-> Todas as rotas de produtos usam `multipart/form-data`. O `seller_id` é extraído do JWT — nunca envie no body.
-
-### POST `/products`
-
+### POST /products — **JWT**
 Cria um novo produto para o seller autenticado.
 
-**Auth:** JWT
+**Body (multipart/form-data)**
+| Campo | Tipo | Obrigatório | Padrão |
+|-------|------|-------------|--------|
+| name | string | sim | — |
+| price | number | sim | — |
+| quantity | integer | não | 0 |
+| status | boolean (string) | não | true |
 
-**Body (form-data):**
-| Campo    | Tipo    | Obrigatório | Padrão |
-|----------|---------|-------------|--------|
-| name     | string  | Sim         | —      |
-| price    | number  | Sim         | —      |
-| quantity | integer | Não         | 0      |
-| status   | boolean | Não         | true   |
-| image    | file    | Não         | —      |
-
-Formatos de imagem aceitos: `png`, `jpg`, `jpeg`, `gif`, `webp`.
-
-**Resposta 201:**
+**Resposta 201**
 ```json
 {
   "mensagem": "Produto cadastrado com sucesso",
-  "produto": { ...produto }
+  "produto": { ...product }
 }
 ```
 
-**Erros:**
-| Status | Mensagem                        | Causa                          |
-|--------|---------------------------------|--------------------------------|
-| 400    | Campos obrigatórios: name, price | name ou price ausente          |
-| 400    | price e quantity devem ser numéricos | Valor não numérico         |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Campos obrigatórios ausentes ou tipos inválidos |
+| 401 | Token ausente ou inválido |
 
 ---
 
-### GET `/products`
-
+### GET /products — **JWT**
 Lista todos os produtos do seller autenticado.
 
-**Auth:** JWT
-
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
-  "produtos": [ { ...produto }, ... ]
+  "produtos": [
+    {
+      "id": 1,
+      "name": "Produto A",
+      "price": 19.99,
+      "quantity": 10,
+      "status": true,
+      "seller_id": 3,
+      "imagens": [
+        { "id": 7, "nome_arquivo": "foto.png", "mime_type": "image/png", "url": "/documentos/7" }
+      ],
+      "documentos": [
+        { "id": 7, "nome_arquivo": "foto.png", "mime_type": "image/png", "url": "/documentos/7" },
+        { "id": 8, "nome_arquivo": "manual.pdf", "mime_type": "application/pdf", "url": "/documentos/8" }
+      ]
+    }
+  ]
 }
 ```
 
+> `imagens` é um atalho que filtra apenas os documentos com `mime_type` iniciado em `image/`. O campo `documentos` continua retornando todos os arquivos do produto.
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+
 ---
 
-### GET `/products/<id>`
+### GET /products/{product_id} — **JWT**
+Retorna um produto específico do seller autenticado.
 
-Retorna os detalhes de um produto específico.
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| product_id | integer |
 
-**Auth:** JWT
-
-**Path param:**
-| Param | Tipo    |
-|-------|---------|
-| id    | integer |
-
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
-  "produto": { ...produto }
+  "produto": { ...product }
 }
 ```
 
-**Erros:**
-| Status | Mensagem              | Causa                                  |
-|--------|-----------------------|----------------------------------------|
-| 404    | Produto não encontrado | id não existe                         |
-| 403    | Acesso não autorizado  | Produto pertence a outro seller        |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Produto pertence a outro seller |
+| 404 | Produto não encontrado |
 
 ---
 
-### PATCH `/products/<id>`
+### PATCH /products/{product_id} — **JWT**
+Atualiza os dados de um produto.
 
-Atualiza os dados de um produto. Envie apenas os campos que deseja alterar.
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| product_id | integer |
 
-**Auth:** JWT
-
-**Path param:**
-| Param | Tipo    |
-|-------|---------|
-| id    | integer |
-
-**Body (form-data):** Qualquer subconjunto:
-| Campo    | Tipo    |
-|----------|---------|
-| name     | string  |
-| price    | number  |
+**Body (multipart/form-data)** — enviar apenas os campos a alterar
+| Campo | Tipo |
+|-------|------|
+| name | string |
+| price | number |
 | quantity | integer |
-| status   | boolean |
-| image    | file    |
+| status | boolean (string) |
 
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
   "mensagem": "Produto atualizado com sucesso",
-  "produto": { ...produto }
+  "produto": { ...product }
 }
 ```
 
-**Erros:**
-| Status | Mensagem              | Causa                           |
-|--------|-----------------------|---------------------------------|
-| 400    | price deve ser numérico | Valor não numérico             |
-| 400    | quantity deve ser numérico | Valor não numérico          |
-| 404    | Produto não encontrado | id não existe                  |
-| 403    | Acesso não autorizado  | Produto pertence a outro seller |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Tipos inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Produto pertence a outro seller |
+| 404 | Produto não encontrado |
 
 ---
 
-### PATCH `/products/<id>/deactivate`
+### PATCH /products/{product_id}/deactivate — **JWT**
+Inativa um produto.
 
-Inativa um produto (define `status = false`).
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| product_id | integer |
 
-**Auth:** JWT
-
-**Path param:**
-| Param | Tipo    |
-|-------|---------|
-| id    | integer |
-
-**Resposta 200:**
+**Resposta 200**
 ```json
 {
   "mensagem": "Produto inativado com sucesso"
 }
 ```
 
-**Erros:**
-| Status | Mensagem              | Causa                           |
-|--------|-----------------------|---------------------------------|
-| 404    | Produto não encontrado | id não existe                  |
-| 403    | Acesso não autorizado  | Produto pertence a outro seller |
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Produto pertence a outro seller |
+| 404 | Produto não encontrado |
 
 ---
 
-## Resumo das Rotas
+## Documentos
 
-| Método | Rota                        | Auth | Descrição                        |
-|--------|-----------------------------|------|----------------------------------|
-| POST   | /auth/login                 | Não  | Login do seller                  |
-| POST   | /users                      | Não  | Cadastro de seller               |
-| PATCH  | /users/activate             | Não  | Ativar conta com código WhatsApp |
-| PATCH  | /users/me                   | JWT  | Atualizar dados do seller        |
-| POST   | /products                   | JWT  | Criar produto                    |
-| GET    | /products                   | JWT  | Listar produtos do seller        |
-| GET    | /products/\<id\>            | JWT  | Detalhar produto                 |
-| PATCH  | /products/\<id\>            | JWT  | Atualizar produto                |
-| PATCH  | /products/\<id\>/deactivate | JWT  | Inativar produto                 |
+### POST /products/{product_id}/documentos — **JWT**
+Faz upload de um documento vinculado a um produto.
+
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| product_id | integer |
+
+**Body (multipart/form-data)**
+| Campo | Tipo | Obrigatório |
+|-------|------|-------------|
+| conteudo | file | sim |
+
+**Resposta 201**
+```json
+{
+  "mensagem": "Documento enviado com sucesso",
+  "documento": { ...documento }
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Campo `conteudo` ausente ou arquivo inválido |
+| 401 | Token ausente ou inválido |
+| 403 | Produto pertence a outro seller |
+| 404 | Produto não encontrado |
+
+---
+
+### GET /products/{product_id}/documentos — **JWT**
+Lista todos os documentos de um produto.
+
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| product_id | integer |
+
+**Resposta 200**
+```json
+{
+  "documentos": [ { ...documento } ]
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Produto pertence a outro seller |
+| 404 | Produto não encontrado |
+
+---
+
+### GET /documentos/{documento_id} — **JWT**
+Retorna o arquivo binário de um documento.
+
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| documento_id | integer |
+
+**Resposta 200**
+Retorna o arquivo com `Content-Type` original e `Content-Disposition: inline; filename="<nome>"`.
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Produto do documento pertence a outro seller |
+| 404 | Documento não encontrado |
+
+---
+
+### DELETE /documentos/{documento_id} — **JWT**
+Remove um documento.
+
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| documento_id | integer |
+
+**Resposta 200**
+```json
+{
+  "mensagem": "Documento removido com sucesso"
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Produto do documento pertence a outro seller |
+| 404 | Documento não encontrado |

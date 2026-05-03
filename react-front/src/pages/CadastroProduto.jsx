@@ -57,18 +57,35 @@ const CadastroProduto = () => {
       formData.append('price', form.price)
       if (form.quantity) formData.append('quantity', form.quantity)
       formData.append('status', form.status)
-      if (imageFile) formData.append('image', imageFile)
 
       const token = localStorage.getItem('token')
+      const authHeader = token ? { Authorization: `Bearer ${token}` } : {}
+
       const res = await fetch(`${API_BASE_URL}/products`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: authHeader,
         body: formData,
       })
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.mensagem || 'Erro ao cadastrar produto')
+      }
+
+      const { produto } = await res.json()
+
+      if (imageFile && produto?.id) {
+        const docData = new FormData()
+        docData.append('conteudo', imageFile)
+        const docRes = await fetch(`${API_BASE_URL}/products/${produto.id}/documentos`, {
+          method: 'POST',
+          headers: authHeader,
+          body: docData,
+        })
+        if (!docRes.ok) {
+          const err = await docRes.json().catch(() => ({}))
+          throw new Error(err.mensagem || 'Produto criado, mas falha ao enviar imagem')
+        }
       }
 
       setFeedback({ tone: 'success', title: 'Produto cadastrado com sucesso! Redirecionando...' })

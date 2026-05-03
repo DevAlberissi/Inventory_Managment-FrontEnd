@@ -17,8 +17,18 @@ async function request(method, path, body) {
   return res.json()
 }
 
+async function requestBlob(path) {
+  const token = localStorage.getItem('token')
+  const headers = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${API_BASE_URL}${path}`, { headers })
+  if (!res.ok) throw new Error('Erro ao carregar imagem')
+  return res.blob()
+}
+
 export const api = {
-  get:   (path)       => request('GET',   path),
-  post:  (path, body) => request('POST',  path, body),
-  patch: (path, body) => request('PATCH', path, body),
+  get:     (path)       => request('GET',   path),
+  post:    (path, body) => request('POST',  path, body),
+  patch:   (path, body) => request('PATCH', path, body),
+  getBlob: (path)       => requestBlob(path),
 }

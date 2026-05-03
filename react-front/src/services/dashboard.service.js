@@ -20,6 +20,9 @@ export const dashboardService = {
   /** Rota real: GET /products (JWT) */
   getProducts: () => api.get('/products'),
 
+  /** Rota real: PATCH /products/:id/deactivate (JWT) */
+  deactivateProduct: (id) => api.patch(`/products/${id}/deactivate`),
+
   /** Mock — rota GET /dashboard/summary ainda não existe na API */
   getSalesSummary: async () => MOCK_SALES_SUMMARY,
 

@@ -6,6 +6,8 @@ import Login from './pages/Login'
 import VerificacaoWhatsApp from './pages/VerificacaoWhatsApp'
 import EditarPerfil from './pages/EditarPerfil'
 import CadastroProduto from './pages/CadastroProduto'
+import EditarProduto from './pages/EditarProduto'
+import ListarProdutos from './pages/ListarProdutos'
 
 function App() {
   return (
@@ -17,7 +19,9 @@ function App() {
           <Route path="/verificar" element={<VerificacaoWhatsApp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/editar-perfil" element={<EditarPerfil />} />
+          <Route path="/produtos" element={<ListarProdutos />} />
           <Route path="/produtos/novo" element={<CadastroProduto />} />
+          <Route path="/produtos/editar/:id" element={<EditarProduto />} />
         </Routes>
       </Router>
     </AuthProvider>
