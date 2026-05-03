@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, Plus, Pencil, PowerOff, ArrowLeft } from 'lucide-react'
-import { Button, Card, Badge, Navbar, Alert, IconBox } from '../components'
+import { Package, Plus, ArrowLeft } from 'lucide-react'
+import { Button, Card, Badge, Navbar, Alert, IconBox, ProductDetailModal } from '../components'
 import { colors, radius, shadow, spacing, tones } from '../styles/tokens'
 import { dashboardService } from '../services/dashboard.service'
 import { api } from '../services/api'
 
 const LOW_STOCK = 5
-
 const PLACEHOLDER_TONES = ['accent', 'success', 'info', 'warning', 'neutral']
 
-const ProductCard = ({ product, onEdit, onDeactivate, deactivating }) => {
+const ProductCard = ({ product, onOpen }) => {
   const [imgSrc, setImgSrc] = useState(null)
   const isLowStock = product.quantity < LOW_STOCK
   const placeholderTone = PLACEHOLDER_TONES[product.id % PLACEHOLDER_TONES.length]
@@ -29,16 +28,28 @@ const ProductCard = ({ product, onEdit, onDeactivate, deactivating }) => {
   }, [firstImage?.url])
 
   return (
-    <div style={{
-      background: colors.surface,
-      border: `1px solid ${colors.border}`,
-      borderRadius: radius.lg,
-      boxShadow: shadow.sm,
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      transition: 'box-shadow .15s ease',
-    }}>
+    <div
+      onClick={() => onOpen(product)}
+      onMouseEnter={e => {
+        e.currentTarget.style.boxShadow = shadow.md
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow = shadow.sm
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
+      style={{
+        background: colors.surface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radius.lg,
+        boxShadow: shadow.sm,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'box-shadow .15s ease, transform .15s ease',
+        cursor: 'pointer',
+      }}
+    >
       {/* Image */}
       <div style={{ height: 190, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
         {imgSrc ? (
@@ -90,27 +101,6 @@ const ProductCard = ({ product, onEdit, onDeactivate, deactivating }) => {
             {product.quantity} un.
           </span>
         </div>
-
-        {product.status && (
-          <div style={{ display: 'flex', gap: spacing[8], marginTop: spacing[4] }}>
-            <Button
-              variant="ghost"
-              style={{ flex: 1, padding: '6px 10px', fontSize: 13 }}
-              onClick={() => onEdit(product.id)}
-            >
-              <Pencil size={13} /> Editar
-            </Button>
-            <Button
-              variant="destructive"
-              style={{ flex: 1, padding: '6px 10px', fontSize: 13 }}
-              disabled={!!deactivating[product.id]}
-              onClick={() => onDeactivate(product)}
-            >
-              <PowerOff size={13} />
-              {deactivating[product.id] ? 'Desativando...' : 'Desativar'}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -121,9 +111,7 @@ const ListarProdutos = () => {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [confirmProduct, setConfirmProduct] = useState(null)
-  const [deactivating, setDeactivating] = useState({})
-  const [actionError, setActionError] = useState(null)
+  const [selectedProduct, setSelectedProduct] = useState(null)
 
   useEffect(() => {
     dashboardService.getProducts()
@@ -132,20 +120,8 @@ const ListarProdutos = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleEdit = (id) => navigate(`/produtos/editar/${id}`)
-
-  const handleDeactivate = async (product) => {
-    setDeactivating(prev => ({ ...prev, [product.id]: true }))
-    setActionError(null)
-    try {
-      await dashboardService.deactivateProduct(product.id)
-      setProducts(prev => prev.map(p => p.id === product.id ? { ...p, status: false } : p))
-      setConfirmProduct(null)
-    } catch (e) {
-      setActionError(e.message)
-    } finally {
-      setDeactivating(prev => ({ ...prev, [product.id]: false }))
-    }
+  const handleDeactivated = (id) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: false } : p))
   }
 
   const totalProdutos = products.length
@@ -186,13 +162,8 @@ const ListarProdutos = () => {
           </Button>
         </div>
 
-        {loading && <Alert tone="info" title="Carregando produtos..." />}
-        {error && <Alert tone="error" title={`Erro ao carregar produtos: ${error}`} />}
-        {actionError && (
-          <div style={{ marginBottom: spacing[16] }}>
-            <Alert tone="error" title={actionError} />
-          </div>
-        )}
+        {loading && <Alert tone="info" message="Carregando produtos..." />}
+        {error && <Alert tone="error" message={`Erro ao carregar produtos: ${error}`} />}
 
         {!loading && !error && products.length === 0 && (
           <Card padding={spacing[48]}>
@@ -221,54 +192,19 @@ const ListarProdutos = () => {
               <ProductCard
                 key={product.id}
                 product={product}
-                onEdit={handleEdit}
-                onDeactivate={setConfirmProduct}
-                deactivating={deactivating}
+                onOpen={setSelectedProduct}
               />
             ))}
           </div>
         )}
       </main>
 
-      {/* Confirm deactivate modal */}
-      {confirmProduct && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <Card padding={spacing[24]} style={{ maxWidth: 400, width: `calc(100% - ${spacing[48]}px)` }}>
-            <div style={{ display: 'flex', gap: spacing[16], alignItems: 'flex-start', marginBottom: spacing[24] }}>
-              <IconBox icon={<PowerOff size={16} />} tone="error" size={40} radius={radius.md} />
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
-                  Desativar produto?
-                </div>
-                <div style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 1.5 }}>
-                  <strong>{confirmProduct.name}</strong> ficará inativo e não aparecerá no catálogo.
-                  Essa ação não pode ser desfeita por aqui.
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: spacing[8], justifyContent: 'flex-end' }}>
-              <Button
-                variant="secondary"
-                onClick={() => setConfirmProduct(null)}
-                disabled={!!deactivating[confirmProduct.id]}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={!!deactivating[confirmProduct.id]}
-                onClick={() => handleDeactivate(confirmProduct)}
-              >
-                <PowerOff size={14} />
-                {deactivating[confirmProduct.id] ? 'Desativando...' : 'Confirmar'}
-              </Button>
-            </div>
-          </Card>
-        </div>
+      {selectedProduct && (
+        <ProductDetailModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onDeactivated={handleDeactivated}
+        />
       )}
     </div>
   )
