@@ -8,6 +8,8 @@ import EditarPerfil from './pages/EditarPerfil'
 import CadastroProduto from './pages/CadastroProduto'
 import EditarProduto from './pages/EditarProduto'
 import ListarProdutos from './pages/ListarProdutos'
+import CadastroVendas from './pages/CadastroVendas'
+import ListarVendas from './pages/ListarVendas'
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
           <Route path="/produtos" element={<ListarProdutos />} />
           <Route path="/produtos/novo" element={<CadastroProduto />} />
           <Route path="/produtos/editar/:id" element={<EditarProduto />} />
+          <Route path="/vendas" element={<ListarVendas />} />
+          <Route path="/vendas/novo" element={<CadastroVendas />} />
         </Routes>
       </Router>
     </AuthProvider>

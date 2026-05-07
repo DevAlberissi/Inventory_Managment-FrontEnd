@@ -64,6 +64,9 @@ export const Navbar = ({ style }) => {
               <button onClick={() => navigate('/produtos')} style={navLink(location.pathname.startsWith('/produtos'))}>
                 Produtos
               </button>
+              <button onClick={() => navigate('/vendas')} style={navLink(location.pathname.startsWith('/vendas'))}>
+                Vendas
+              </button>
             </>
           ) : (
             <>

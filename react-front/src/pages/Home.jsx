@@ -275,7 +275,7 @@ const SellerDashboard = () => {
             )}
 
             {/* Products quick access */}
-            <Card padding={spacing[24]}>
+            <Card padding={spacing[24]} style={{ marginBottom: spacing[16] }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', gap: spacing[16], alignItems: 'center' }}>
                   <IconBox icon={<Package size={18} />} tone="accent" size={44} radius={radius.md} />
@@ -297,6 +297,29 @@ const SellerDashboard = () => {
                   </Button>
                   <Button variant="primary" onClick={() => navigate('/produtos')}>
                     <Package size={14} /> Ver Produtos
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Sales quick access */}
+            <Card padding={spacing[24]}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: spacing[16], alignItems: 'center' }}>
+                  <IconBox icon={<ShoppingBag size={18} />} tone="success" size={44} radius={radius.md} />
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>Minhas Vendas</div>
+                    <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
+                      Registre e acompanhe suas transações
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: spacing[8] }}>
+                  <Button variant="secondary" onClick={() => navigate('/vendas/novo')}>
+                    <Plus size={14} /> Registrar Venda
+                  </Button>
+                  <Button variant="primary" onClick={() => navigate('/vendas')}>
+                    <ShoppingBag size={14} /> Ver Vendas
                   </Button>
                 </div>
               </div>
