@@ -4,4 +4,28 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/auth': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/users': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/products': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/vendas': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/resend-whatsapp': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

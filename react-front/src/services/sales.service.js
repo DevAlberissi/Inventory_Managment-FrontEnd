@@ -1,5 +1,4 @@
 import { api } from './api'
-import { API_BASE_URL } from '../config/constants'
 
 export const salesService = {
   /**
@@ -8,25 +7,7 @@ export const salesService = {
    */
   create: async (vendaData) => {
     try {
-      const token = localStorage.getItem('token')
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      }
-
-      const response = await fetch(`${API_BASE_URL}/vendas`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(vendaData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.mensagem || errorData.message || `Erro ${response.status}: Falha ao registrar venda`
-        throw new Error(errorMessage)
-      }
-
-      return await response.json()
+      return await api.post('/vendas', vendaData)
     } catch (error) {
       console.error('Erro ao criar venda:', error)
       throw error
@@ -39,21 +20,7 @@ export const salesService = {
    */
   list: async () => {
     try {
-      const token = localStorage.getItem('token')
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
-      const response = await fetch(`${API_BASE_URL}/vendas`, {
-        method: 'GET',
-        headers,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.mensagem || errorData.message || `Erro ${response.status}: Falha ao carregar vendas`
-        throw new Error(errorMessage)
-      }
-
-      return await response.json()
+      return await api.get('/vendas')
     } catch (error) {
       console.error('Erro ao listar vendas:', error)
       throw error
@@ -66,21 +33,7 @@ export const salesService = {
    */
   getById: async (id) => {
     try {
-      const token = localStorage.getItem('token')
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
-      const response = await fetch(`${API_BASE_URL}/vendas/${id}`, {
-        method: 'GET',
-        headers,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.mensagem || errorData.message || `Erro ${response.status}: Falha ao carregar venda`
-        throw new Error(errorMessage)
-      }
-
-      return await response.json()
+      return await api.get(`/vendas/${id}`)
     } catch (error) {
       console.error('Erro ao obter venda:', error)
       throw error
@@ -93,25 +46,7 @@ export const salesService = {
    */
   update: async (id, vendaData) => {
     try {
-      const token = localStorage.getItem('token')
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      }
-
-      const response = await fetch(`${API_BASE_URL}/vendas/${id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(vendaData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.mensagem || errorData.message || `Erro ${response.status}: Falha ao atualizar venda`
-        throw new Error(errorMessage)
-      }
-
-      return await response.json()
+      return await api.patch(`/vendas/${id}`, vendaData)
     } catch (error) {
       console.error('Erro ao atualizar venda:', error)
       throw error
@@ -124,21 +59,7 @@ export const salesService = {
    */
   delete: async (id) => {
     try {
-      const token = localStorage.getItem('token')
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
-      const response = await fetch(`${API_BASE_URL}/vendas/${id}`, {
-        method: 'DELETE',
-        headers,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.mensagem || errorData.message || `Erro ${response.status}: Falha ao remover venda`
-        throw new Error(errorMessage)
-      }
-
-      return await response.json()
+      return await api.delete(`/vendas/${id}`)
     } catch (error) {
       console.error('Erro ao remover venda:', error)
       throw error

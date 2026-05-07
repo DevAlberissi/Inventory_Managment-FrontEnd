@@ -2,7 +2,10 @@ import { API_BASE_URL } from '../config/constants'
 
 async function request(method, path, body) {
   const token = localStorage.getItem('token')
-  const headers = { 'Content-Type': 'application/json' }
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -11,8 +14,14 @@ async function request(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.mensagem || 'Erro na requisição')
+    const text = await res.text().catch(() => '')
+    let err = {}
+    try {
+      err = JSON.parse(text)
+    } catch {
+      err = { mensagem: text || 'Erro na requisição' }
+    }
+    throw new Error(err.mensagem || err.message || 'Erro na requisição')
   }
   return res.json()
 }
@@ -30,5 +39,6 @@ export const api = {
   get:     (path)       => request('GET',   path),
   post:    (path, body) => request('POST',  path, body),
   patch:   (path, body) => request('PATCH', path, body),
+  delete:  (path)       => request('DELETE', path),
   getBlob: (path)       => requestBlob(path),
 }
