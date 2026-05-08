@@ -158,9 +158,7 @@ const SellerDashboard = () => {
   const { token } = useAuth()
   const navigate = useNavigate()
 
-  const [products, setProducts] = useState([])
-  const [salesSummary, setSalesSummary] = useState(null)
-  const [recentSales, setRecentSales] = useState([])
+  const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const sellerName = useMemo(() => {
@@ -172,24 +170,14 @@ const SellerDashboard = () => {
   }, [token])
 
   useEffect(() => {
-    Promise.all([
-      dashboardService.getProducts(),
-      dashboardService.getSalesSummary(),
-      dashboardService.getRecentSales(),
-    ])
-      .then(([prodRes, salesRes, salesListRes]) => {
-        setProducts(prodRes.produtos || [])
-        setSalesSummary(salesRes)
-        setRecentSales(salesListRes.vendas || [])
-      })
+    dashboardService.getDashboard()
+      .then(data => setDashboardData(data))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
 
-  const totalProdutos  = products.length
-  const produtosAtivos = products.filter(p => p.status).length
-  const estoqueBaixo   = products.filter(p => p.quantity < 5).length
-  const valorEstoque   = products.reduce((sum, p) => sum + (p.price * p.quantity), 0)
+  const fmtBRL = (v) => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const fmtDate = (iso) => new Date(iso).toLocaleDateString('pt-BR')
 
   return (
     <div style={{ minHeight: '100vh', background: colors.bg }}>
@@ -213,66 +201,70 @@ const SellerDashboard = () => {
           <Alert tone="error" title={`Erro ao carregar dados: ${error}`} />
         )}
 
-        {!loading && !error && (
+        {!loading && !error && dashboardData && (
           <>
             {/* KPI row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing[16], marginBottom: spacing[24] }}>
-              <KpiCard title="Total de Produtos" value={totalProdutos} icon={<Package size={16} />} tone="accent" />
-              <KpiCard title="Produtos Ativos"   value={produtosAtivos} icon={<CheckCircle2 size={16} />} tone="success" />
-              <KpiCard title="Estoque Baixo"     value={estoqueBaixo} icon={<AlertTriangle size={16} />} tone="warning" />
+              <KpiCard title="Total de Produtos" value={dashboardData.total_produtos}  icon={<Package size={16} />}       tone="accent" />
+              <KpiCard title="Produtos Ativos"   value={dashboardData.produtos_ativos} icon={<CheckCircle2 size={16} />}  tone="success" />
+              <KpiCard title="Estoque Baixo"     value={dashboardData.estoque_baixo}   icon={<AlertTriangle size={16} />} tone="warning" />
               <KpiCard
                 title="Valor do Estoque"
-                value={valorEstoque.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                value={fmtBRL(dashboardData.valor_estoque)}
                 icon={<DollarSign size={16} />}
                 tone="neutral"
               />
             </div>
 
             {/* Sales section */}
-            {salesSummary && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[16], marginBottom: spacing[24] }}>
-                {/* Summary metrics */}
-                <Card padding={spacing[24]}>
-                  <CardHeader title="Resumo de Vendas" subtitle="Dados do mês atual" />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[12], marginBottom: spacing[16] }}>
-                    <SalesMetric label="Total vendido"   value={salesSummary.totalVendas}        positive />
-                    <SalesMetric label="Transações"      value={salesSummary.totalTransacoes} />
-                    <SalesMetric label="Ticket médio"    value={salesSummary.ticketMedio} />
-                    <SalesMetric label="Crescimento"     value={salesSummary.crescimentoMensal}  positive />
-                  </div>
-                  <Badge tone="info" dot>Dados simulados — integração em breve</Badge>
-                </Card>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[16], marginBottom: spacing[24] }}>
+              {/* Summary metrics */}
+              <Card padding={spacing[24]}>
+                <CardHeader title="Resumo de Vendas" subtitle="Dados acumulados" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing[12] }}>
+                  <SalesMetric label="Total vendido"  value={fmtBRL(dashboardData.resumo_vendas?.total_vendido)}  positive />
+                  <SalesMetric label="Nº de vendas"   value={dashboardData.resumo_vendas?.num_vendas} />
+                  <SalesMetric label="Ticket médio"   value={fmtBRL(dashboardData.resumo_vendas?.ticket_medio)} />
+                  <SalesMetric label="Un. vendidas"   value={dashboardData.resumo_vendas?.unidades_vendidas} />
+                </div>
+              </Card>
 
-                {/* Recent sales */}
-                <Card padding={spacing[24]}>
-                  <CardHeader title="Últimas Vendas" subtitle="Movimentações recentes" />
-                  {recentSales.map((sale, i) => (
+              {/* Recent sales */}
+              <Card padding={spacing[24]}>
+                <CardHeader title="Últimas Vendas" subtitle="Movimentações recentes" />
+                {(dashboardData.ultimas_vendas || []).length === 0 ? (
+                  <div style={{ fontSize: 14, color: colors.textMuted, paddingTop: spacing[8] }}>
+                    Nenhuma venda registrada ainda.
+                  </div>
+                ) : (
+                  (dashboardData.ultimas_vendas || []).map((venda, i) => (
                     <div
-                      key={sale.id}
+                      key={venda.id}
                       style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         padding: `${spacing[8]}px 0`,
-                        borderBottom: i < recentSales.length - 1 ? `1px solid ${colors.border}` : 'none',
+                        borderBottom: i < (dashboardData.ultimas_vendas || []).length - 1 ? `1px solid ${colors.border}` : 'none',
                       }}
                     >
                       <div style={{ display: 'flex', gap: spacing[8], alignItems: 'center' }}>
                         <IconBox icon={<ShoppingBag size={14} />} tone="accent" size={28} radius={radius.sm} />
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{sale.produto}</div>
-                          <div style={{ fontSize: 12, color: colors.textMuted }}>{sale.data} · {sale.quantidade} un.</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>
+                            {venda.produto_nome}
+                          </div>
+                          <div style={{ fontSize: 12, color: colors.textMuted }}>
+                            {fmtDate(venda.created_at)} · {venda.quantidade} un.
+                          </div>
                         </div>
                       </div>
                       <span style={{ fontSize: 13, fontWeight: 700, color: colors.success, fontVariantNumeric: 'tabular-nums' }}>
-                        {sale.valor}
+                        {fmtBRL(venda.total)}
                       </span>
                     </div>
-                  ))}
-                  <div style={{ marginTop: spacing[12] }}>
-                    <Badge tone="info" dot>Dados simulados — integração em breve</Badge>
-                  </div>
-                </Card>
-              </div>
-            )}
+                  ))
+                )}
+              </Card>
+            </div>
 
             {/* Products quick access */}
             <Card padding={spacing[24]} style={{ marginBottom: spacing[16] }}>
@@ -282,10 +274,10 @@ const SellerDashboard = () => {
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>Meus Produtos</div>
                     <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>
-                      {totalProdutos} cadastrado{totalProdutos !== 1 ? 's' : ''}
-                      {estoqueBaixo > 0 && (
+                      {dashboardData.total_produtos} cadastrado{dashboardData.total_produtos !== 1 ? 's' : ''}
+                      {dashboardData.estoque_baixo > 0 && (
                         <span style={{ color: colors.warning, fontWeight: 600 }}>
-                          {' '}· {estoqueBaixo} com estoque baixo
+                          {' '}· {dashboardData.estoque_baixo} com estoque baixo
                         </span>
                       )}
                     </div>

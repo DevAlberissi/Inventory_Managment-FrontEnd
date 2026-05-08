@@ -1,387 +1,82 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ShoppingBag, Plus, ArrowLeft } from 'lucide-react'
+import { ShoppingBag, Plus, ArrowLeft, Trash2 } from 'lucide-react'
 import { Button, Card, Badge, Navbar, Alert, IconBox } from '../components'
-import { colors, radius, spacing } from '../styles/tokens'
+import { colors, radius, spacing, tones } from '../styles/tokens'
 import { salesService } from '../services/sales.service'
 
-const normalizeCurrency = (value) => {
-  if (value == null || value === '') return null
-  if (typeof value === 'number') return value
+const fmtBRL = (v) => (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('pt-BR')
 
-  const normalized = String(value)
-    .replace(/\s/g, '')
-    .replace(/R\$\s?/g, '')
-    .replace(/\./g, '')
-    .replace(/,/g, '.')
-    .replace(/[^0-9.\-]/g, '')
-
-  const parsed = Number(normalized)
-
-  return Number.isNaN(parsed) ? null : parsed
-}
-
-const formatSaleDate = (value) => {
-  if (!value) return '—'
-
-  if (typeof value === 'string' && value.includes('/')) {
-    const [day, month, year] = value.split('/')
-    const parsed = new Date(`${year}-${month}-${day}`)
-
-    return Number.isNaN(parsed.getTime())
-      ? '—'
-      : parsed.toLocaleDateString('pt-BR')
-  }
-
-  const parsed = new Date(value)
-
-  return Number.isNaN(parsed.getTime())
-    ? '—'
-    : parsed.toLocaleDateString('pt-BR')
-}
-
-const formatSaleValue = (value) => {
-  const parsed = normalizeCurrency(value)
-
-  if (parsed === null) return '—'
-
-  return parsed.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
-const getSaleProductName = (sale) => {
-  if (typeof sale.produto === 'string') return sale.produto
-  if (sale.produto?.name) return sale.produto.name
-
-  if (typeof sale.product === 'string') return sale.product
-  if (sale.product?.name) return sale.product.name
-
-  if (sale.product_name) return sale.product_name
-
-  return sale.produto ?? sale.product ?? 'Produto'
-}
-
-const getSaleCustomerName = (sale) => {
-  if (typeof sale.cliente === 'string') return sale.cliente
-  if (sale.cliente?.name) return sale.cliente.name
-
-  if (typeof sale.customer === 'string') return sale.customer
-  if (sale.customer?.name) return sale.customer.name
-
-  if (sale.nome_cliente) return sale.nome_cliente
-  if (sale.client) return sale.client
-  if (sale.customer_name) return sale.customer_name
-
-  return '—'
-}
-
-const getSaleQuantity = (sale) => {
-  return sale.quantidade ?? sale.quantity ?? sale.qty ?? '—'
-}
-
-const getSaleValue = (sale) => {
-  return (
-    sale.preco_total ??
-    sale.valor_total ??
-    sale.valor ??
-    sale.total ??
-    sale.price ??
-    sale.amount ??
-    null
-  )
-}
-
-const getSaleStatus = (sale) => {
-  if (sale.status === true || sale.status === false) {
-    return sale.status
-  }
-
-  if (
-    sale.status === 'concluida' ||
-    sale.status === 'concluída' ||
-    sale.status === 'completed'
-  ) {
-    return true
-  }
-
-  return false
-}
-
-const SalesCard = ({
-  sale,
-  isDeleteRequested,
-  onEdit,
-  onDeleteRequest,
-  onCancelDelete,
-  onConfirmDelete,
-  deleteInProgress,
-}) => {
-  const productName = getSaleProductName(sale)
-
-  const formattedDate = formatSaleDate(
-    sale.data_venda ??
-    sale.data ??
-    sale.created_at ??
-    sale.date
-  )
-
-  const formattedValue = formatSaleValue(getSaleValue(sale))
-
-  const clientName = getSaleCustomerName(sale)
-
-  const quantity = getSaleQuantity(sale)
-
-  const status = getSaleStatus(sale)
+const SaleRow = ({ sale, onCancel }) => {
+  const total = sale.quantidade * sale.preco_unitario
 
   return (
-    <Card
-      padding={spacing[20]}
+    <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
+        display: 'grid',
+        gridTemplateColumns: '2fr 1fr 1fr 1fr auto',
         gap: spacing[16],
-        minHeight: 260,
+        alignItems: 'center',
+        padding: `${spacing[12]}px ${spacing[16]}px`,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          gap: spacing[12],
-          alignItems: 'center',
-        }}
-      >
-        <IconBox
-          icon={<ShoppingBag size={18} />}
-          tone="accent"
-          size={48}
-          radius={radius.md}
-        />
-
+      <div style={{ display: 'flex', gap: spacing[12], alignItems: 'center', minWidth: 0 }}>
+        <IconBox icon={<ShoppingBag size={14} />} tone="success" size={36} radius={radius.sm} />
         <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: 16,
-              fontWeight: 700,
-              color: colors.text,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {productName}
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: colors.text,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {sale.produto?.name ?? `Produto #${sale.produto_id}`}
           </div>
-
-          <div
-            style={{
-              fontSize: 13,
-              color: colors.textMuted,
-              marginTop: 4,
-            }}
-          >
-            {formattedDate} · {quantity} un.
+          <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+            #{sale.id}
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gap: spacing[12] }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: spacing[12],
-            alignItems: 'center',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 12,
-                color: colors.textMuted,
-                marginBottom: 4,
-                textTransform: 'uppercase',
-                letterSpacing: '.06em',
-              }}
-            >
-              Cliente
-            </div>
-
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: colors.text,
-              }}
-            >
-              {clientName}
-            </div>
-          </div>
-
-          <Badge tone="neutral">Venda</Badge>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: spacing[12],
-            alignItems: 'center',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 12,
-                color: colors.textMuted,
-                marginBottom: 4,
-                textTransform: 'uppercase',
-                letterSpacing: '.06em',
-              }}
-            >
-              Valor
-            </div>
-
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: colors.success,
-                fontVariantNumeric: 'tabular-nums',
-              }}
-            >
-              {formattedValue}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'right' }}>
-            <div
-              style={{
-                fontSize: 12,
-                color: colors.textMuted,
-                marginBottom: 4,
-                textTransform: 'uppercase',
-                letterSpacing: '.06em',
-              }}
-            >
-              Status
-            </div>
-
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: colors.primary,
-              }}
-            >
-              {status ? 'Concluída' : 'Pendente'}
-            </div>
-          </div>
+      <div>
+        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>Qtd.</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>
+          {sale.quantidade} un.
         </div>
       </div>
 
-      {isDeleteRequested ? (
-        <div
-          style={{
-            marginTop: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing[12],
-          }}
-        >
-          <div
-            style={{
-              padding: spacing[14],
-              borderRadius: radius.sm,
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: '#B91C1C',
-              }}
-            >
-              Confirmar exclusão
-            </div>
-
-            <div
-              style={{
-                fontSize: 12,
-                color: colors.textMuted,
-                marginTop: 6,
-              }}
-            >
-              Tem certeza que deseja excluir esta venda?
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: spacing[8],
-            }}
-          >
-            <Button
-              variant="ghost"
-              style={{
-                padding: `${spacing[6]}px ${spacing[12]}px`,
-                fontSize: 12,
-              }}
-              onClick={onCancelDelete}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              variant="destructive"
-              disabled={deleteInProgress}
-              style={{
-                padding: `${spacing[6]}px ${spacing[12]}px`,
-                fontSize: 12,
-              }}
-              onClick={() => onConfirmDelete(sale)}
-            >
-              {deleteInProgress ? 'Excluindo...' : 'Excluir agora'}
-            </Button>
-          </div>
+      <div>
+        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>Un.</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>
+          {fmtBRL(sale.preco_unitario)}
         </div>
-      ) : (
-        <div
-          style={{
-            marginTop: 'auto',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: spacing[8],
-          }}
-        >
-          <Button
-            variant="secondary"
-            style={{
-              padding: `${spacing[6]}px ${spacing[12]}px`,
-              fontSize: 12,
-            }}
-            onClick={() => onEdit(sale)}
-          >
-            Editar
-          </Button>
+      </div>
 
-          <Button
-            variant="destructive"
-            style={{
-              padding: `${spacing[6]}px ${spacing[12]}px`,
-              fontSize: 12,
-            }}
-            onClick={() => onDeleteRequest(sale)}
-          >
-            Excluir
-          </Button>
+      <div>
+        <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>Data</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>
+          {fmtDate(sale.created_at)}
         </div>
-      )}
-    </Card>
+      </div>
+
+      <div style={{ display: 'flex', gap: spacing[8], alignItems: 'center' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: tones.success.icon, fontVariantNumeric: 'tabular-nums', minWidth: 72, textAlign: 'right' }}>
+          {fmtBRL(total)}
+        </span>
+        <button
+          title="Cancelar venda"
+          onClick={() => onCancel(sale)}
+          style={{
+            background: 'none', border: `1px solid ${colors.border}`, cursor: 'pointer',
+            padding: `${spacing[6]}px`, borderRadius: radius.sm,
+            display: 'inline-flex', alignItems: 'center', color: colors.textMuted,
+            transition: 'color .15s, border-color .15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = tones.error.icon; e.currentTarget.style.borderColor = tones.error.border }}
+          onMouseLeave={e => { e.currentTarget.style.color = colors.textMuted; e.currentTarget.style.borderColor = colors.border }}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -391,92 +86,40 @@ const ListarVendas = () => {
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [feedback, setFeedback] = useState(null)
+  const [cancelFeedback, setCancelFeedback] = useState(null)
 
-  const [pendingDeleteId, setPendingDeleteId] = useState(null)
-  const [deleteInProgress, setDeleteInProgress] = useState(false)
-
-  useEffect(() => {
-    fetchSales()
-  }, [])
+  useEffect(() => { fetchSales() }, [])
 
   const fetchSales = async () => {
     try {
       setLoading(true)
       setError(null)
-
       const result = await salesService.list()
-
-      console.log('Vendas carregadas:', result)
-
-      setSales(
-        Array.isArray(result?.vendas)
-          ? result.vendas
-          : Array.isArray(result)
-            ? result
-            : []
-      )
+      setSales(result.vendas || [])
     } catch (err) {
-      console.error('Erro ao carregar vendas:', err)
-
       setError(err.message)
-
-      setFeedback({
-        tone: 'error',
-        title: err.message,
-      })
     } finally {
       setLoading(false)
     }
   }
 
-  const totalVendas = sales.length
-
-  const valorTotal = sales.reduce((sum, s) => {
-    const parsed = normalizeCurrency(getSaleValue(s))
-    return sum + (parsed || 0)
-  }, 0)
-
-  const ticketMedio =
-    totalVendas > 0 ? valorTotal / totalVendas : 0
-
-  const handleEdit = (sale) => {
-    navigate(`/vendas/editar/${sale.id}`)
-  }
-
-  const handleDeleteRequest = (sale) => {
-    setPendingDeleteId(sale.id)
-  }
-
-  const handleCancelDelete = () => {
-    setPendingDeleteId(null)
-  }
-
-  const handleConfirmDelete = async (sale) => {
+  const handleCancel = async (sale) => {
+    if (!window.confirm(`Cancelar venda #${sale.id} de "${sale.produto?.name}"? O estoque será devolvido.`)) return
     try {
       setDeleteInProgress(true)
 
       await salesService.delete(sale.id)
-
-      setSales((prev) =>
-        prev.filter((item) => item.id !== sale.id)
-      )
-
-      setPendingDeleteId(null)
-
-      setFeedback({
-        tone: 'success',
-        title: 'Venda excluída com sucesso.',
-      })
+      setSales(prev => prev.filter(s => s.id !== sale.id))
+      setCancelFeedback({ tone: 'success', title: `Venda #${sale.id} cancelada. Estoque restaurado.` })
+      setTimeout(() => setCancelFeedback(null), 3000)
     } catch (err) {
-      setFeedback({
-        tone: 'error',
-        title: err.message || 'Erro ao excluir venda',
-      })
-    } finally {
-      setDeleteInProgress(false)
+      setCancelFeedback({ tone: 'error', title: `Erro ao cancelar: ${err.message}` })
     }
   }
+
+  const totalVendas = sales.length
+  const valorTotal = sales.reduce((sum, s) => sum + s.quantidade * s.preco_unitario, 0)
+  const ticketMedio = totalVendas > 0 ? valorTotal / totalVendas : 0
 
   return (
     <div
@@ -487,21 +130,10 @@ const ListarVendas = () => {
     >
       <Navbar />
 
-      <main
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: `${spacing[32]}px ${spacing[24]}px`,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: spacing[24],
-          }}
-        >
+      <main style={{ maxWidth: 1100, margin: '0 auto', padding: `${spacing[32]}px ${spacing[24]}px` }}>
+
+        {/* Page header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[24] }}>
           <div>
             <button
               onClick={() => navigate('/')}
@@ -532,23 +164,18 @@ const ListarVendas = () => {
             >
               Minhas Vendas
             </div>
+            <div style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>
+              Histórico de transações registradas
+            </div>
           </div>
-
-          <Button
-            variant="primary"
-            onClick={() => navigate('/vendas/novo')}
-          >
-            <Plus size={16} />
-            Registrar Venda
+          <Button variant="primary" onClick={() => navigate('/vendas/novo')}>
+            <Plus size={16} /> Registrar Venda
           </Button>
         </div>
 
-        {feedback && (
+        {cancelFeedback && (
           <div style={{ marginBottom: spacing[16] }}>
-            <Alert
-              tone={feedback.tone}
-              title={feedback.title}
-            />
+            <Alert tone={cancelFeedback.tone} title={cancelFeedback.title} />
           </div>
         )}
 
@@ -592,18 +219,8 @@ const ListarVendas = () => {
               >
                 Valor Total
               </div>
-
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: colors.success,
-                }}
-              >
-                {valorTotal.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
+              <div style={{ fontSize: 24, fontWeight: 700, color: tones.success.icon, fontVariantNumeric: 'tabular-nums' }}>
+                {fmtBRL(valorTotal)}
               </div>
             </Card>
 
@@ -617,36 +234,15 @@ const ListarVendas = () => {
               >
                 Ticket Médio
               </div>
-
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: colors.primary,
-                }}
-              >
-                {ticketMedio.toLocaleString('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL',
-                })}
+              <div style={{ fontSize: 24, fontWeight: 700, color: colors.text, fontVariantNumeric: 'tabular-nums' }}>
+                {fmtBRL(ticketMedio)}
               </div>
             </Card>
           </div>
         )}
 
-        {loading && (
-          <Alert
-            tone="info"
-            title="Carregando vendas..."
-          />
-        )}
-
-        {error && !loading && (
-          <Alert
-            tone="error"
-            title={`Erro ao carregar vendas: ${error}`}
-          />
-        )}
+        {loading && <Alert tone="info" title="Carregando vendas..." />}
+        {error && !loading && <Alert tone="error" title={`Erro ao carregar vendas: ${error}`} />}
 
         {!loading && !error && totalVendas === 0 && (
           <Card
@@ -682,28 +278,37 @@ const ListarVendas = () => {
         )}
 
         {!loading && !error && totalVendas > 0 && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: spacing[16],
-            }}
-          >
-            {sales.map((sale) => (
-              <SalesCard
-                key={sale.id}
-                sale={sale}
-                isDeleteRequested={
-                  pendingDeleteId === sale.id
-                }
-                onEdit={handleEdit}
-                onDeleteRequest={handleDeleteRequest}
-                onCancelDelete={handleCancelDelete}
-                onConfirmDelete={handleConfirmDelete}
-                deleteInProgress={deleteInProgress}
-              />
-            ))}
+          <div style={{ borderRadius: radius.lg, border: `1px solid ${colors.border}`, overflow: 'hidden', background: colors.surface }}>
+            {/* Table header */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 1fr 1fr 1fr auto',
+                gap: spacing[16],
+                padding: `${spacing[10]}px ${spacing[16]}px`,
+                background: colors.bg,
+                borderBottom: `1px solid ${colors.border}`,
+                fontWeight: 600,
+                fontSize: 11,
+                color: colors.textMuted,
+                textTransform: 'uppercase',
+                letterSpacing: '.06em',
+              }}
+            >
+              <div>Produto</div>
+              <div>Qtd.</div>
+              <div>Preço Un.</div>
+              <div>Data</div>
+              <div style={{ textAlign: 'right', paddingRight: 32 }}>Total</div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', divide: `1px solid ${colors.border}` }}>
+              {sales.map((sale, i) => (
+                <div key={sale.id} style={{ borderBottom: i < sales.length - 1 ? `1px solid ${colors.border}` : 'none' }}>
+                  <SaleRow sale={sale} onCancel={handleCancel} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>

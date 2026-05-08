@@ -10,7 +10,6 @@ import EditarProduto from './pages/EditarProduto'
 import ListarProdutos from './pages/ListarProdutos'
 import CadastroVendas from './pages/CadastroVendas'
 import ListarVendas from './pages/ListarVendas'
-import EditarVenda from './pages/EditarVenda'
 
 function App() {
   return (
@@ -27,7 +26,6 @@ function App() {
           <Route path="/produtos/editar/:id" element={<EditarProduto />} />
           <Route path="/vendas" element={<ListarVendas />} />
           <Route path="/vendas/novo" element={<CadastroVendas />} />
-          <Route path="/vendas/editar/:id" element={<EditarVenda />} />
         </Routes>
       </Router>
     </AuthProvider>

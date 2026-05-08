@@ -360,3 +360,176 @@ Remove um documento.
 | 401 | Token ausente ou inválido |
 | 403 | Produto do documento pertence a outro seller |
 | 404 | Documento não encontrado |
+
+---
+
+## Dashboard
+
+### GET /dashboards — **JWT**
+Retorna KPIs agregados de produtos, resumo de vendas e as últimas 6 vendas do seller autenticado.
+
+**Resposta 200**
+```json
+{
+  "total_produtos": 12,
+  "produtos_ativos": 10,
+  "estoque_baixo": 3,
+  "valor_estoque": 4850.00,
+  "resumo_vendas": {
+    "total_vendido": 12400.00,
+    "ticket_medio": 310.00,
+    "unidades_vendidas": 87,
+    "num_vendas": 40
+  },
+  "ultimas_vendas": [
+    {
+      "id": 1,
+      "produto_id": 3,
+      "produto_nome": "Camiseta",
+      "quantidade": 2,
+      "preco_unitario": 49.90,
+      "total": 99.80,
+      "created_at": "2026-05-07T10:00:00"
+    }
+  ]
+}
+```
+
+> `estoque_baixo` conta produtos com `quantity < 5`.
+> `ticket_medio` é a média do valor por linha de venda (`quantidade × preco_unitario`).
+> `ultimas_vendas` retorna no máximo 6 vendas, ordenadas da mais recente para a mais antiga.
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+
+---
+
+## Vendas
+
+### POST /vendas — **JWT**
+Registra uma nova venda, descontando o estoque do produto.
+
+**Body (JSON)**
+| Campo | Tipo | Obrigatório |
+|-------|------|-------------|
+| produto_id | integer | sim |
+| quantidade | integer | sim |
+
+**Resposta 201**
+```json
+{
+  "mensagem": "Venda registrada com sucesso",
+  "venda": {
+    "id": 1,
+    "produto_id": 5,
+    "seller_id": 3,
+    "quantidade": 2,
+    "preco_unitario": 19.99,
+    "created_at": "2026-05-07T14:30:00"
+  }
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 400 | Body ausente, campos obrigatórios faltando ou tipos inválidos |
+| 401 | Token ausente ou inválido |
+| 403 | Seller inativo, produto pertence a outro seller ou produto inativo |
+| 404 | Produto não encontrado |
+| 422 | Estoque insuficiente para a quantidade solicitada |
+
+---
+
+### GET /vendas — **JWT**
+Lista todas as vendas do seller autenticado.
+
+**Resposta 200**
+```json
+{
+  "vendas": [
+    {
+      "id": 1,
+      "produto_id": 5,
+      "seller_id": 3,
+      "quantidade": 2,
+      "preco_unitario": 19.99,
+      "created_at": "2026-05-07T14:30:00",
+      "produto": {
+        "id": 5,
+        "name": "Camiseta",
+        "imagens": [
+          {
+            "id": 1,
+            "product_id": 5,
+            "nome_arquivo": "camiseta.jpg",
+            "mime_type": "image/jpeg"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+
+---
+
+### GET /vendas/{venda_id} — **JWT**
+Retorna uma venda específica do seller autenticado.
+
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| venda_id | integer |
+
+**Resposta 200**
+```json
+{
+  "venda": {
+    "id": 1,
+    "produto_id": 5,
+    "seller_id": 3,
+    "quantidade": 2,
+    "preco_unitario": 19.99,
+    "created_at": "2026-05-07T14:30:00"
+  }
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Venda pertence a outro seller |
+| 404 | Venda não encontrada |
+
+---
+
+### DELETE /vendas/{venda_id} — **JWT**
+Cancela uma venda e devolve a quantidade ao estoque do produto.
+
+**Parâmetros de rota**
+| Parâmetro | Tipo |
+|-----------|------|
+| venda_id | integer |
+
+**Resposta 200**
+```json
+{
+  "mensagem": "Venda cancelada com sucesso"
+}
+```
+
+**Erros**
+| Status | Descrição |
+|--------|-----------|
+| 401 | Token ausente ou inválido |
+| 403 | Venda pertence a outro seller |
+| 404 | Venda não encontrada |
