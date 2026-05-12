@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShoppingBag, Plus, ArrowLeft, Trash2 } from 'lucide-react'
-import { Button, Card, Badge, Navbar, Alert, IconBox } from '../components'
+import { Button, Card, Badge, Navbar, Alert, IconBox, ConfirmationModal } from '../components'
 import { colors, radius, spacing, tones } from '../styles/tokens'
 import { salesService } from '../services/sales.service'
 
@@ -87,6 +87,9 @@ const ListarVendas = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [cancelFeedback, setCancelFeedback] = useState(null)
+  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false)
+  const [saleToDelete, setSaleToDelete] = useState(null)
+  const [deleteInProgress, setDeleteInProgress] = useState(false)
 
   useEffect(() => { fetchSales() }, [])
 
@@ -103,17 +106,25 @@ const ListarVendas = () => {
     }
   }
 
-  const handleCancel = async (sale) => {
-    if (!window.confirm(`Cancelar venda #${sale.id} de "${sale.produto?.name}"? O estoque será devolvido.`)) return
+  const handleCancel = (sale) => {
+    setSaleToDelete(sale)
+    setConfirmationModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!saleToDelete) return
     try {
       setDeleteInProgress(true)
-
-      await salesService.delete(sale.id)
-      setSales(prev => prev.filter(s => s.id !== sale.id))
-      setCancelFeedback({ tone: 'success', title: `Venda #${sale.id} cancelada. Estoque restaurado.` })
+      await salesService.delete(saleToDelete.id)
+      setSales(prev => prev.filter(s => s.id !== saleToDelete.id))
+      setCancelFeedback({ tone: 'success', title: `Venda #${saleToDelete.id} cancelada. Estoque restaurado.` })
+      setConfirmationModalOpen(false)
+      setSaleToDelete(null)
+      setDeleteInProgress(false)
       setTimeout(() => setCancelFeedback(null), 3000)
     } catch (err) {
       setCancelFeedback({ tone: 'error', title: `Erro ao cancelar: ${err.message}` })
+      setDeleteInProgress(false)
     }
   }
 
@@ -312,6 +323,19 @@ const ListarVendas = () => {
           </div>
         )}
       </main>
+
+      <ConfirmationModal
+        isOpen={confirmationModalOpen}
+        title="Cancelar venda?"
+        message={`Deseja cancelar a venda #${saleToDelete?.id} de "${saleToDelete?.produto?.name}"? O estoque será devolvido.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setConfirmationModalOpen(false)
+          setSaleToDelete(null)
+        }}
+        loading={deleteInProgress}
+        tone="error"
+      />
     </div>
   )
 }
