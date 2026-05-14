@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Package, Pencil, PowerOff, FileText, Image } from 'lucide-react'
+import { X, Package, Pencil, Power, PowerOff, FileText, Image } from 'lucide-react'
 import { Button } from './Button'
 import { Badge } from './Badge'
 import { Alert } from './Alert'
@@ -12,11 +12,12 @@ import { dashboardService } from '../services/dashboard.service'
 const LOW_STOCK = 5
 const PLACEHOLDER_TONES = ['accent', 'success', 'info', 'warning', 'neutral']
 
-export const ProductDetailModal = ({ product, onClose, onDeactivated }) => {
+export const ProductDetailModal = ({ product, onClose, onDeactivated, onActivated }) => {
   const navigate = useNavigate()
   const [imgSrc, setImgSrc] = useState(null)
   const [confirming, setConfirming] = useState(false)
   const [deactivating, setDeactivating] = useState(false)
+  const [activating, setActivating] = useState(false)
   const [actionError, setActionError] = useState(null)
 
   const placeholderTone = PLACEHOLDER_TONES[product.id % PLACEHOLDER_TONES.length]
@@ -51,6 +52,19 @@ export const ProductDetailModal = ({ product, onClose, onDeactivated }) => {
     } catch (e) {
       setActionError(e.message)
       setDeactivating(false)
+    }
+  }
+
+  const handleActivate = async () => {
+    setActivating(true)
+    setActionError(null)
+    try {
+      await dashboardService.activateProduct(product.id)
+      onActivated(product.id)
+      onClose()
+    } catch (e) {
+      setActionError(e.message)
+      setActivating(false)
     }
   }
 
@@ -179,44 +193,44 @@ export const ProductDetailModal = ({ product, onClose, onDeactivated }) => {
           {actionError && <Alert tone="error" message={actionError} />}
 
           {/* Actions */}
-          {product.status && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[8] }}>
-              {confirming && (
-                <Alert
-                  tone="warning"
-                  message={`Desativar "${product.name}"? Ele ficará inativo e não aparecerá no catálogo. Essa ação não pode ser desfeita aqui.`}
-                />
-              )}
-              <div style={{ display: 'flex', gap: spacing[8] }}>
-                {confirming ? (
-                  <>
-                    <Button
-                      variant="secondary"
-                      style={{ flex: 1 }}
-                      onClick={() => { setConfirming(false); setActionError(null) }}
-                      disabled={deactivating}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      style={{ flex: 1 }}
-                      onClick={handleDeactivate}
-                      disabled={deactivating}
-                    >
-                      <PowerOff size={14} />
-                      {deactivating ? 'Desativando...' : 'Confirmar desativação'}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="ghost"
-                      style={{ flex: 1 }}
-                      onClick={() => navigate(`/produtos/editar/${product.id}`)}
-                    >
-                      <Pencil size={14} /> Editar
-                    </Button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing[8] }}>
+            {confirming && (
+              <Alert
+                tone="warning"
+                message={`Desativar "${product.name}"? Ele ficará inativo e não aparecerá no catálogo. Essa ação não pode ser desfeita aqui.`}
+              />
+            )}
+            <div style={{ display: 'flex', gap: spacing[8] }}>
+              {confirming ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    style={{ flex: 1 }}
+                    onClick={() => { setConfirming(false); setActionError(null) }}
+                    disabled={deactivating}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    style={{ flex: 1 }}
+                    onClick={handleDeactivate}
+                    disabled={deactivating}
+                  >
+                    <PowerOff size={14} />
+                    {deactivating ? 'Desativando...' : 'Confirmar desativação'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    style={{ flex: 1 }}
+                    onClick={() => navigate(`/produtos/editar/${product.id}`)}
+                  >
+                    <Pencil size={14} /> Editar
+                  </Button>
+                  {product.status ? (
                     <Button
                       variant="destructive"
                       style={{ flex: 1 }}
@@ -224,11 +238,20 @@ export const ProductDetailModal = ({ product, onClose, onDeactivated }) => {
                     >
                       <PowerOff size={14} /> Desativar
                     </Button>
-                  </>
-                )}
-              </div>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      style={{ flex: 1 }}
+                      onClick={handleActivate}
+                      disabled={activating}
+                    >
+                      <Power size={14} /> {activating ? 'Ativando...' : 'Ativar'}
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

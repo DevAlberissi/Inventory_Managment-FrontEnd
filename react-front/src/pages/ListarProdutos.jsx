@@ -124,6 +124,10 @@ const ListarProdutos = () => {
     setProducts(prev => prev.map(p => p.id === id ? { ...p, status: false } : p))
   }
 
+  const handleActivated = (id) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: true } : p))
+  }
+
   const totalProdutos = products.length
   const lowStockCount = products.filter(p => p.quantity < LOW_STOCK).length
 
@@ -204,6 +208,7 @@ const ListarProdutos = () => {
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onDeactivated={handleDeactivated}
+          onActivated={handleActivated}
         />
       )}
     </div>
