@@ -9,6 +9,6 @@ export const Logo = ({ size = 28, onClick }) => (
     }}>
       <Package size={size - 6} color="#fff" />
     </span>
-    <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: '#020617' }}>StockHub</span>
+    <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: '-0.02em', color: '#020617' }}>Nuvem Olfativa</span>
   </span>
 )
