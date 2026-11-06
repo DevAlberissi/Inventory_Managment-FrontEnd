@@ -1,6 +1,10 @@
-# StockHub — Gestão de Estoque
+# Gestão de Estoque
 
 ---
+FRONT-END: 
+```bash
+https://github.com/Jullya-Nigro07/Inventory-Managment.git
+```
 
 ## 👥 Integrantes
 - Anderson Alberissi 2403321
